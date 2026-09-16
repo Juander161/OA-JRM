@@ -1,0 +1,12 @@
+{
+    "id":  "AAMkAGEjemplo0001AAA=",
+    "receivedDateTime":  "2026-09-16T13:42:00Z",
+    "hasAttachments":  false,
+    "internetMessageId":  "\u003cejemplo0001@northridge-grad.example\u003e",
+    "conversationId":  "AAQkAGEjemplo0001",
+    "subject":  "PRDF: RDD 07-OCT-26, Event Date 15-NOV-26, NORTHRIDGE GRAD SUPPLY LLC, Rep NORTHRIDGE GRAD SUPPLY LLC, BO# 93938905",
+    "from":  "orders@northridge-grad.example",
+    "fromName":  "Northridge Grad Supply",
+    "toRecipients":  "dc-mmex-orderapproval@empresa.com",
+    "body":  "\u003chtml\u003e\u003cbody\u003e\u003cp\u003eItem [1012010774] Qty [1] Description [PRODUCT PACKAGE: GRADUATION REGALIA SET]\u003cbr\u003eItem [2000181530] Qty [25] Description [TASSEL: STANDARD.GARNET/GOLD.2026 CHARM]\u003cbr\u003eItem [2000186004] Qty [25] Description [DIPLOMA COVER: PADDED.NAVY.GOLD FOIL]\u003c/p\u003e\u003c/body\u003e\u003c/html\u003e"
+}

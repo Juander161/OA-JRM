@@ -1,0 +1,12 @@
+{
+    "id":  "AAMkAGEjemplo0004AAA=",
+    "receivedDateTime":  "2026-09-16T14:26:00Z",
+    "hasAttachments":  false,
+    "internetMessageId":  "\u003cejemplo0004@sunbeltcap.example\u003e",
+    "conversationId":  "AAQkAGEjemplo0004",
+    "subject":  "PRDF: RDD 21-SEP-26, Event Date 16-OCT-26, SUNBELT CAP AND GOWN, Rep SUNBELT CAP AND GOWN, BO# 93950012",
+    "from":  "rep@sunbeltcap.example",
+    "fromName":  "Sunbelt Cap \u0026 Gown",
+    "toRecipients":  "dc-mmex-orderapproval@empresa.com",
+    "body":  "\u003chtml\u003e\u003cbody\u003e\u003cp\u003eItem [2000190112] Qty [20] Description [STOLE: L-33.SATIN.WHITE.PLAIN]\u003cbr\u003eItem [2000181530] Qty [20] Description [TASSEL: STANDARD.GARNET/GOLD.2026 CHARM]\u003c/p\u003e\u003c/body\u003e\u003c/html\u003e"
+}

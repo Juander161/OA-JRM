@@ -1,0 +1,98 @@
+[
+  {
+    "id": "AAMkAGEjemplo0001AAA=",
+    "receivedDateTime": "2026-09-16T13:42:00Z",
+    "hasAttachments": false,
+    "internetMessageId": "<ejemplo0001@northridge-grad.example>",
+    "conversationId": "AAQkAGEjemplo0001",
+    "subject": "PRDF: RDD {D+21}, Event Date {D+60}, NORTHRIDGE GRAD SUPPLY LLC, Rep NORTHRIDGE GRAD SUPPLY LLC, BO# 93938905",
+    "from": "orders@northridge-grad.example",
+    "fromName": "Northridge Grad Supply",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Item [1012010774] Qty [1] Description [PRODUCT PACKAGE: GRADUATION REGALIA SET]<br>Item [2000181530] Qty [25] Description [TASSEL: STANDARD.GARNET/GOLD.2026 CHARM]<br>Item [2000186004] Qty [25] Description [DIPLOMA COVER: PADDED.NAVY.GOLD FOIL]</p></body></html>"
+  },
+  {
+    "id": "AAMkAGEjemplo0002AAA=",
+    "receivedDateTime": "2026-09-16T13:55:00Z",
+    "hasAttachments": false,
+    "internetMessageId": "<ejemplo0002@campusregalia.example>",
+    "conversationId": "AAQkAGEjemplo0002",
+    "subject": "PRDF: RDD {D+14}, Event Date {D+45}, CAMPUS REGALIA CO, Rep CAMPUS REGALIA CO, BO# 93941277",
+    "from": "sales@campusregalia.example",
+    "fromName": "Campus Regalia Co.",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Item [2000178214] Qty [30] Description [CAP: BDG.STANDARD.HARD.POLYESTER.GARNET.ELASTIC]<br>Item [2000179048] Qty [30] Description [GOWN: BDG.GRADUATE.POLYESTER.GARNET.5'04\"]</p></body></html>"
+  },
+  {
+    "id": "AAMkAGEjemplo0003AAA=",
+    "receivedDateTime": "2026-09-16T14:10:00Z",
+    "hasAttachments": false,
+    "internetMessageId": "<ejemplo0003@mapleleafgrad.example>",
+    "conversationId": "AAQkAGEjemplo0003",
+    "subject": "RE: [Ext] RE: FW: PRDF: RDD {D+9}, Event Date N/A, MAPLE LEAF GRAD CANADA, Rep MAPLE LEAF GRAD CANADA, BO# 95474485 [ thread::2KMSFv68Qx ]",
+    "from": "cs@mapleleafgrad.example",
+    "fromName": "Maple Leaf Grad Canada",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Is there another way we can send stoles L-33 satin white plain to reach the event date? If it works for you, please update item number in oracle before to release.</p><p>The rep's response was: sorry that won't do, this is an emergency and the school needs those stoles by next week.</p><hr><p>Item [2000190112] Qty [40] Description [STOLE: L-33.SATIN.WHITE.PLAIN]</p></body></html>"
+  },
+  {
+    "id": "AAMkAGEjemplo0004AAA=",
+    "receivedDateTime": "2026-09-16T14:26:00Z",
+    "hasAttachments": false,
+    "internetMessageId": "<ejemplo0004@sunbeltcap.example>",
+    "conversationId": "AAQkAGEjemplo0004",
+    "subject": "PRDF: RDD {D+5}, Event Date {D+30}, SUNBELT CAP AND GOWN, Rep SUNBELT CAP AND GOWN, BO# 93950012",
+    "from": "rep@sunbeltcap.example",
+    "fromName": "Sunbelt Cap & Gown",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Item [2000190112] Qty [20] Description [STOLE: L-33.SATIN.WHITE.PLAIN]<br>Item [2000181530] Qty [20] Description [TASSEL: STANDARD.GARNET/GOLD.2026 CHARM]</p></body></html>"
+  },
+  {
+    "id": "AAMkAGEjemplo0005AAA=",
+    "receivedDateTime": "2026-09-16T14:40:00Z",
+    "hasAttachments": false,
+    "internetMessageId": "<ejemplo0005@lakeside.example>",
+    "conversationId": "AAQkAGEjemplo0005",
+    "subject": "PRDF: RDD {D+18}, Event Date {D+50}, LAKESIDE ACADEMY STORE, Rep LAKESIDE ACADEMY STORE, BO# 93952630",
+    "from": "store@lakeside.example",
+    "fromName": "Lakeside Academy Store",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Item [2000175560] Qty [20] Description [GOWN: BDG.GRADUATE.POLYESTER.NAVY.5'09\"]<br>Item [2000171229] Qty [20] Description [CAP: BDG.STANDARD.HARD.POLYESTER.NAVY.ELASTIC]<br>Item [2000199999] Qty [5] Description [STOLE: CUSTOM.EMBROIDERED.NAVY]</p></body></html>"
+  },
+  {
+    "id": "AAMkAGEjemplo0006AAA=",
+    "receivedDateTime": "2026-09-16T15:03:00Z",
+    "hasAttachments": false,
+    "internetMessageId": "<ejemplo0006@pioneergrad.example>",
+    "conversationId": "AAQkAGEjemplo0006",
+    "subject": "PRDF: RDD {D+25}, Event Date {D+70}, PIONEER GRADUATION SVCS, Rep PIONEER GRADUATION SVCS",
+    "from": "ops@pioneergrad.example",
+    "fromName": "Pioneer Graduation Svcs",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Item [2000179048] Qty [10] Description [GOWN: BDG.GRADUATE.POLYESTER.GARNET.5'04\"]<br>Item [2000171229] Qty [10] Description [CAP: BDG.STANDARD.HARD.POLYESTER.NAVY.ELASTIC]</p></body></html>"
+  },
+  {
+    "id": "AAMkAGEjemplo0007AAA=",
+    "receivedDateTime": "2026-09-16T15:18:00Z",
+    "hasAttachments": true,
+    "internetMessageId": "<ejemplo0007@northridge-grad.example>",
+    "conversationId": "AAQkAGEjemplo0007",
+    "subject": "FW: PRDF: RDD {D+12}, Event Date {D+40}, NORTHRIDGE GRAD SUPPLY LLC, Rep NORTHRIDGE GRAD SUPPLY LLC, BO# 93939114",
+    "from": "orders@northridge-grad.example",
+    "fromName": "Northridge Grad Supply",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Please see the attached screenshot from the portal, the quantities do not match what the school ordered.</p><p>Item [2000183377] Qty [8] Description [HOOD: MASTERS.VELVET.EDUCATION.LIGHT BLUE]</p></body></html>"
+  },
+  {
+    "id": "AAMkAGEjemplo0008AAA=",
+    "receivedDateTime": "2026-09-16T15:31:00Z",
+    "hasAttachments": false,
+    "internetMessageId": "<ejemplo0008@riverbend.example>",
+    "conversationId": "AAQkAGEjemplo0008",
+    "subject": "PRDF: RDD {D+30}, Event Date {D+75}, RIVERBEND UNIVERSITY SHOP, Rep RIVERBEND UNIVERSITY SHOP, BO# 93958841",
+    "from": "shop@riverbend.example",
+    "fromName": "Riverbend University Shop",
+    "toRecipients": "dc-mmex-orderapproval@empresa.com",
+    "body": "<html><body><p>Item [2000183377] Qty [6] Description [HOOD: MASTERS.VELVET.EDUCATION.LIGHT BLUE]<br>Item [2000171229] Qty [6] Description [CAP: BDG.STANDARD.HARD.POLYESTER.NAVY.ELASTIC]<br>Item [2000186004] Qty [6] Description [DIPLOMA COVER: PADDED.NAVY.GOLD FOIL]</p></body></html>"
+  }
+]

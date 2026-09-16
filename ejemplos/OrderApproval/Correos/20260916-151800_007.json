@@ -1,0 +1,12 @@
+{
+    "id":  "AAMkAGEjemplo0007AAA=",
+    "receivedDateTime":  "2026-09-16T15:18:00Z",
+    "hasAttachments":  true,
+    "internetMessageId":  "\u003cejemplo0007@northridge-grad.example\u003e",
+    "conversationId":  "AAQkAGEjemplo0007",
+    "subject":  "FW: PRDF: RDD 28-SEP-26, Event Date 26-OCT-26, NORTHRIDGE GRAD SUPPLY LLC, Rep NORTHRIDGE GRAD SUPPLY LLC, BO# 93939114",
+    "from":  "orders@northridge-grad.example",
+    "fromName":  "Northridge Grad Supply",
+    "toRecipients":  "dc-mmex-orderapproval@empresa.com",
+    "body":  "\u003chtml\u003e\u003cbody\u003e\u003cp\u003ePlease see the attached screenshot from the portal, the quantities do not match what the school ordered.\u003c/p\u003e\u003cp\u003eItem [2000183377] Qty [8] Description [HOOD: MASTERS.VELVET.EDUCATION.LIGHT BLUE]\u003c/p\u003e\u003c/body\u003e\u003c/html\u003e"
+}

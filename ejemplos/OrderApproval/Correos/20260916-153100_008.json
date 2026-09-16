@@ -1,0 +1,12 @@
+{
+    "id":  "AAMkAGEjemplo0008AAA=",
+    "receivedDateTime":  "2026-09-16T15:31:00Z",
+    "hasAttachments":  false,
+    "internetMessageId":  "\u003cejemplo0008@riverbend.example\u003e",
+    "conversationId":  "AAQkAGEjemplo0008",
+    "subject":  "PRDF: RDD 16-OCT-26, Event Date 30-NOV-26, RIVERBEND UNIVERSITY SHOP, Rep RIVERBEND UNIVERSITY SHOP, BO# 93958841",
+    "from":  "shop@riverbend.example",
+    "fromName":  "Riverbend University Shop",
+    "toRecipients":  "dc-mmex-orderapproval@empresa.com",
+    "body":  "\u003chtml\u003e\u003cbody\u003e\u003cp\u003eItem [2000183377] Qty [6] Description [HOOD: MASTERS.VELVET.EDUCATION.LIGHT BLUE]\u003cbr\u003eItem [2000171229] Qty [6] Description [CAP: BDG.STANDARD.HARD.POLYESTER.NAVY.ELASTIC]\u003cbr\u003eItem [2000186004] Qty [6] Description [DIPLOMA COVER: PADDED.NAVY.GOLD FOIL]\u003c/p\u003e\u003c/body\u003e\u003c/html\u003e"
+}

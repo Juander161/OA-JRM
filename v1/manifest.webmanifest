@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "Order Approval V1",
+  "short_name": "OA V1",
+  "description": "Order Approval · Sin API",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F0F0F0",
+  "theme_color": "#0F6CBD",
+  "icons": [
+    {"src": "../icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "../icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "../icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

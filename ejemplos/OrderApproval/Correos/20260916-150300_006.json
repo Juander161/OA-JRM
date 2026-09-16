@@ -1,0 +1,12 @@
+{
+    "id":  "AAMkAGEjemplo0006AAA=",
+    "receivedDateTime":  "2026-09-16T15:03:00Z",
+    "hasAttachments":  false,
+    "internetMessageId":  "\u003cejemplo0006@pioneergrad.example\u003e",
+    "conversationId":  "AAQkAGEjemplo0006",
+    "subject":  "PRDF: RDD 11-OCT-26, Event Date 25-NOV-26, PIONEER GRADUATION SVCS, Rep PIONEER GRADUATION SVCS",
+    "from":  "ops@pioneergrad.example",
+    "fromName":  "Pioneer Graduation Svcs",
+    "toRecipients":  "dc-mmex-orderapproval@empresa.com",
+    "body":  "\u003chtml\u003e\u003cbody\u003e\u003cp\u003eItem [2000179048] Qty [10] Description [GOWN: BDG.GRADUATE.POLYESTER.GARNET.5\u002704\"]\u003cbr\u003eItem [2000171229] Qty [10] Description [CAP: BDG.STANDARD.HARD.POLYESTER.NAVY.ELASTIC]\u003c/p\u003e\u003c/body\u003e\u003c/html\u003e"
+}

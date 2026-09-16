@@ -1,0 +1,12 @@
+{
+    "id":  "AAMkAGEjemplo0005AAA=",
+    "receivedDateTime":  "2026-09-16T14:40:00Z",
+    "hasAttachments":  false,
+    "internetMessageId":  "\u003cejemplo0005@lakeside.example\u003e",
+    "conversationId":  "AAQkAGEjemplo0005",
+    "subject":  "PRDF: RDD 04-OCT-26, Event Date 05-NOV-26, LAKESIDE ACADEMY STORE, Rep LAKESIDE ACADEMY STORE, BO# 93952630",
+    "from":  "store@lakeside.example",
+    "fromName":  "Lakeside Academy Store",
+    "toRecipients":  "dc-mmex-orderapproval@empresa.com",
+    "body":  "\u003chtml\u003e\u003cbody\u003e\u003cp\u003eItem [2000175560] Qty [20] Description [GOWN: BDG.GRADUATE.POLYESTER.NAVY.5\u002709\"]\u003cbr\u003eItem [2000171229] Qty [20] Description [CAP: BDG.STANDARD.HARD.POLYESTER.NAVY.ELASTIC]\u003cbr\u003eItem [2000199999] Qty [5] Description [STOLE: CUSTOM.EMBROIDERED.NAVY]\u003c/p\u003e\u003c/body\u003e\u003c/html\u003e"
+}

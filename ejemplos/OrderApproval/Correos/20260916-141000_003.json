@@ -1,0 +1,12 @@
+{
+    "id":  "AAMkAGEjemplo0003AAA=",
+    "receivedDateTime":  "2026-09-16T14:10:00Z",
+    "hasAttachments":  false,
+    "internetMessageId":  "\u003cejemplo0003@mapleleafgrad.example\u003e",
+    "conversationId":  "AAQkAGEjemplo0003",
+    "subject":  "RE: [Ext] RE: FW: PRDF: RDD 25-SEP-26, Event Date N/A, MAPLE LEAF GRAD CANADA, Rep MAPLE LEAF GRAD CANADA, BO# 95474485 [ thread::2KMSFv68Qx ]",
+    "from":  "cs@mapleleafgrad.example",
+    "fromName":  "Maple Leaf Grad Canada",
+    "toRecipients":  "dc-mmex-orderapproval@empresa.com",
+    "body":  "\u003chtml\u003e\u003cbody\u003e\u003cp\u003eIs there another way we can send stoles L-33 satin white plain to reach the event date? If it works for you, please update item number in oracle before to release.\u003c/p\u003e\u003cp\u003eThe rep\u0027s response was: sorry that won\u0027t do, this is an emergency and the school needs those stoles by next week.\u003c/p\u003e\u003chr\u003e\u003cp\u003eItem [2000190112] Qty [40] Description [STOLE: L-33.SATIN.WHITE.PLAIN]\u003c/p\u003e\u003c/body\u003e\u003c/html\u003e"
+}
