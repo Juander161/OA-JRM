@@ -1,5 +1,5 @@
 /* Order Approval · service worker (red primero, caché si no hay conexión) */
-const CACHE = "order-approval-v1";
+const CACHE = "order-approval-v2";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./assets/app.css", "./assets/core.js", "./assets/v1.js", "./assets/v2.js",

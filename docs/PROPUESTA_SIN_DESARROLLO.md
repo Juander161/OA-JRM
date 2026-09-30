@@ -2,18 +2,24 @@
 
 Solución armada solo con herramientas de Microsoft 365: **Excel**, **Power Automate**, **Outlook** y **OneDrive**. No hay código, ni API, ni acceso a Oracle. El inventario se toma del archivo **Material OH**.
 
+> **Alcance actual:** solo comparar los correos sencillos contra el Material OH y **registrar el resultado en Excel** (hoja `Correos` del libro). No se responden correos ni se ponen banderas o categorías en Outlook, y el buzón compartido no se modifica.
+>
+> | Aplicar | Omitir (fuera del alcance actual) |
+> |---|---|
+> | Secciones 1 a 4, flujo OA-A pasos **5.1 a 5.6**, pruebas 1 a 5, secciones 10 y 11 | Pasos **5.7** (bandera) y **5.8** (resumen al operador), secciones **6** (categorías), **7** (respuestas rápidas) y **8** (flujo OA-B) |
+
 | Pieza | Herramienta | Qué hace |
 |---|---|---|
 | Libro `OrderApproval.xlsx` | Excel | Guarda el Material OH, lee cada correo con fórmulas, compara contra la existencia y arma la tabla de comparación |
-| Flujo **OA-A Clasificar correos** | Power Automate | Registra cada correo en Excel, pone bandera, lo mueve de carpeta y envía un resumen con la comparación |
-| Flujo **OA-B Programar respuesta** | Power Automate | Envía a la hora indicada una respuesta armada en Excel |
-| Reglas y categorías | Outlook | Colorea los resúmenes (verde, rojo, naranja) como categorías |
-| Plantillas y envío programado | Outlook | Respuestas rápidas sin flujo |
+| Flujo **OA-A Clasificar correos** | Power Automate | Registra cada correo en Excel con el resultado de la comparación |
+| Flujo **OA-B Programar respuesta** | Power Automate | *Fuera del alcance actual* |
+| Reglas y categorías | Outlook | *Fuera del alcance actual* |
+| Plantillas y envío programado | Outlook | *Fuera del alcance actual* |
 
-Resultado en Outlook:
+Resultado:
 
-- **Buzón compartido:** cada correo queda con **palomita verde** (se puede aprobar) o **bandera roja** (shortage o revisión) y se mueve a `OA Aprobar`, `OA Shortage` u `OA Revision`.
-- **Correo del operador:** llega un resumen por pedido, con categoría de color, y al abrirlo muestra la **tabla de comparación** (artículo, cantidad pedida, existencia OH y estado).
+- **Libro `OrderApproval.xlsx`:** cada correo queda registrado en la hoja `Correos` con su BO#, artículos, existencia y resultado (`VERDE` = aprobar, `ROJO` = shortage o sin BO#, `NARANJA` = complejo, revisión manual).
+- **Buzón compartido:** no se modifica. El flujo solo lee los correos.
 
 ---
 
@@ -36,8 +42,9 @@ Resultado en Outlook:
 ## 1. Carpetas y buzón
 
 1. En **OneDrive para la Empresa** crea la carpeta `OrderApproval`.
-2. En el buzón compartido **#DC-MMex Order Approval**, dentro de *Bandeja de entrada*, crea las carpetas `OA Aprobar`, `OA Shortage` y `OA Revision`.
-3. En tu buzón personal (el del operador) crea la carpeta `OA Resultados`.
+2. En tu buzón **personal** (el del operador, no el compartido) crea la carpeta `OA Resultados`.
+
+> En el buzón compartido **#DC-MMex Order Approval** no se crea ninguna carpeta.
 
 ---
 
@@ -320,18 +327,23 @@ Una celda de Excel admite hasta 32,767 caracteres. Si un hilo largo no cabe, se 
 | Columna de clave | `IdCorreo` |
 | Valor de clave | *Id. de mensaje* (del desencadenador) |
 
-### 5.7 Bandera y carpeta
+### 5.7 Bandera
+
+> *Fuera del alcance actual: no aplicar.*
+
 **Control → Cambiar** → En: *Resultado* (de la acción `Resultado`).
 
-| Caso (igual a) | Acción 1: **Marcar con marca de seguimiento el correo electrónico (V2)** | Acción 2: **Mover correo electrónico (V2)** |
-|---|---|---|
-| `VERDE` | Estado: **Completado** | Carpeta: `OA Aprobar` |
-| `ROJO` | Estado: **Marcado** | Carpeta: `OA Shortage` |
-| `NARANJA` | Estado: **Marcado** | Carpeta: `OA Revision` |
+| Caso (igual a) | Acción: **Marcar con marca de seguimiento el correo electrónico (V2)** |
+|---|---|
+| `VERDE` | Estado: **Completado** (palomita verde) |
+| `ROJO` | Estado: **Marcado** (bandera roja) |
 
-En ambas acciones: **Id. de mensaje** = *Id. de mensaje* (del desencadenador) y **Dirección del buzón original** = buzón compartido. Primero la bandera y después mover.
+En la acción: **Id. de mensaje** = *Id. de mensaje* (del desencadenador) y **Dirección del buzón original** = buzón compartido. `NARANJA` (complejo) no lleva caso: el correo se queda sin marca para revisión manual. El correo **no se mueve** de la Bandeja de entrada.
 
 ### 5.8 Resumen para el operador
+
+> *Fuera del alcance actual: no aplicar.*
+
 Debajo del **Cambiar**: **Office 365 Outlook → Enviar un correo electrónico (V2)**.
 
 | Campo | Valor |
@@ -346,6 +358,8 @@ Guarda el flujo.
 ---
 
 ## 6. Categorías de color y reglas de Outlook
+
+> *Fuera del alcance actual: no aplicar.*
 
 En el buzón **del operador**, con Outlook en la web o el nuevo Outlook:
 
@@ -370,6 +384,8 @@ Así la carpeta `OA Resultados` funciona como bandeja: cada pedido aparece con s
 
 ## 7. Respuestas rápidas
 
+> *Fuera del alcance actual: no aplicar.*
+
 ### 7.1 Plantillas de Outlook (sin flujo)
 
 **Outlook en la web / nuevo Outlook**
@@ -390,6 +406,8 @@ Así la carpeta `OA Resultados` funciona como bandeja: cada pedido aparece con s
 ---
 
 ## 8. Flujo OA-B · Programar respuesta
+
+> *Fuera del alcance actual: no aplicar.*
 
 Envía desde el buzón compartido una respuesta preparada en la hoja `Respuestas`, a la hora indicada, aunque Outlook esté cerrado.
 
@@ -424,10 +442,10 @@ Envía desde el buzón compartido una respuesta preparada en la hoja `Respuestas
 
 | # | Correo de prueba al buzón compartido | Resultado esperado |
 |---|---|---|
-| 1 | Asunto `PRDF: RDD <fecha +20 días>, Event Date N/A, PRUEBA SA, Rep PRUEBA SA, BO# 11111111` · cuerpo con artículos que **sí** tienen existencia | Fila `VERDE` en Excel · palomita verde · carpeta `OA Aprobar` · resumen `[VERDE]` verde |
-| 2 | Igual, con `Qty` mayor a la existencia y RDD en 3 días | `ROJO` · `CRITICA` · bandera roja · `OA Shortage` · resumen rojo con `FALTAN n` |
+| 1 | Asunto `PRDF: RDD <fecha +20 días>, Event Date N/A, PRUEBA SA, Rep PRUEBA SA, BO# 11111111` · cuerpo con artículos que **sí** tienen existencia | Fila `VERDE` en Excel · palomita verde (sigue en Bandeja de entrada) · resumen `[VERDE]` verde |
+| 2 | Igual, con `Qty` mayor a la existencia y RDD en 3 días | `ROJO` · `CRITICA` · bandera roja · resumen rojo con `FALTAN n` |
 | 3 | Igual, sin `BO#` en el asunto | `ROJO` · resumen `[ROJO] BO# SIN BO#` |
-| 4 | `RE: ` + asunto de la prueba 1 con texto libre | `NARANJA` · `OA Revision` · resumen naranja |
+| 4 | `RE: ` + asunto de la prueba 1 con texto libre | `NARANJA` · sin marca en el buzón · resumen naranja |
 | 5 | Con un artículo que no existe en el Material OH | `ROJO` (existencia 0) |
 | 6 | Fila en `Respuestas` programada a +5 min y ejecutar OA-B | Llega la respuesta y `Estado` = `Enviada` |
 | 7 | Igual que 6, pero cambiar `Estado` a `Cancelada` antes de la hora | No se envía nada |
@@ -440,7 +458,7 @@ Envía desde el buzón compartido una respuesta preparada en la hoja `Respuestas
 |---|---|---|
 | El Material OH es una foto del día | Si el inventario cambió después de exportarlo, la bandera puede no coincidir con la existencia real | Cargar el Material OH al inicio de cada turno |
 | Correos complejos (hilos, adjuntos, texto libre) | Siempre quedan en naranja para revisión humana | Esperado |
-| Categorías de color en el buzón compartido | El conector estándar de Outlook no asigna categorías | Banderas y carpetas en el buzón compartido; categorías en el resumen del operador |
+| Categorías de color en el buzón compartido | El conector estándar de Outlook no asigna categorías | Banderas en el buzón compartido; categorías en el resumen del operador |
 | Buzón compartido | La respuesta sale como correo nuevo con `RE:` en el asunto, no dentro del mismo hilo | Esperado |
 | Desencadenadores de Outlook | Revisan el buzón cada pocos minutos, no al instante | Esperado |
 | Libro abierto en Excel de escritorio | El flujo puede fallar por archivo bloqueado | Cerrar Excel de escritorio después de actualizar |

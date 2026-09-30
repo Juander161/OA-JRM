@@ -18,7 +18,7 @@
     ["SUNBELT CAP AND GOWN", "Sunbelt Cap & Gown", "rep@sunbeltcap.example"], ["LAKESIDE ACADEMY STORE", "Lakeside Academy Store", "store@lakeside.example"],
     ["RIVERBEND UNIVERSITY SHOP", "Riverbend University Shop", "shop@riverbend.example"], ["MAPLE LEAF GRAD CANADA", "Maple Leaf Grad Canada", "cs@mapleleafgrad.example"],
     ["PIONEER GRADUATION SVCS", "Pioneer Graduation Svcs", "ops@pioneergrad.example"]];
-  const S = {log: [], auto: false, timer: null, tick: null, rules: {clasificar: true, mover: false, responderShortage: false, acuse: false}, seq: 1};
+  const S = {log: [], auto: false, timer: null, tick: null, rules: {clasificar: true, responderShortage: false, acuse: false}, seq: 1};
 
   const addDays = n => { const d = OA.today(); d.setDate(d.getDate() + n); return d; };
   const line = (id, q) => `Item [${id}] Qty [${q}] Description [${DESC[id]}]`;
@@ -55,7 +55,6 @@
     const d = m.decision; if (d.estado === "gris") return null;
     const a = OA.makeAction("clasificar", m, {origen: auto ? "regla" : "manual"});
     log("PATCH", `${U}/messages/${m.id}`, {categories: [a.categoria], flag: {flagStatus: a.bandera}});
-    if (S.rules.mover) log("POST", `${U}/messages/${m.id}/move`, {destinationId: a.carpetaDestino});
     a.estado = "procesada";
     return a;
   }
@@ -150,7 +149,6 @@
           const r = (k, l) => `<label class="chk"><input type="checkbox" data-rule="${k}"${S.rules[k] ? " checked" : ""}> ${l}</label>`;
           v.innerHTML = `<div class="view-inner"><h2>Automatización</h2><div class="card"><div class="ch"><h3>Al llegar un correo</h3></div><div class="cb">
             ${r("clasificar", "Categoría y bandera en Outlook")}
-            ${r("mover", "Mover a carpeta OA Aprobar / OA Shortage / OA Revision")}
             ${r("responderShortage", "Responder con la plantilla Shortage")}
             ${r("acuse", "Responder con la plantilla En revisión a los complejos")}
           </div></div>

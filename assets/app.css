@@ -184,6 +184,8 @@ textarea.inp{height:auto;min-height:110px;padding:8px 10px;resize:vertical;font-
 .chk{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer}
 .stats{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px}
 .stats b{font-family:var(--mono);font-weight:600}
+.note{margin:10px 0;padding:8px 12px;border-radius:4px;font-size:13px;background:var(--naranja-soft);border-left:3px solid var(--naranja)}
+.note.ok{background:var(--azul-soft);border-left-color:var(--azul)}
 .drop{border:1.5px dashed var(--line-2);border-radius:6px;padding:14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
 .drop.over{border-color:var(--brand);background:var(--brand-soft)}
 .colhead{display:inline-flex;align-items:center;gap:4px}

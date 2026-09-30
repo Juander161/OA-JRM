@@ -255,6 +255,65 @@ OA.xlsx.read = async buf => {
   if (!sheets.length) throw new Error("El libro no tiene hojas legibles.");
   return sheets;
 };
+/* Escritura de .xlsx sin librerías (ZIP sin compresión + SpreadsheetML mínimo).
+   sheets: [{name, cols: [{h: "Encabezado", w: 14}], rows: [[valor | {v, s}]]}]
+   Valores: texto, número, Date (fecha y hora) o {v, s} con estilo: 3 = verde, 4 = rojo. */
+OA.xlsx.crcTable = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+OA.xlsx.crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = OA.xlsx.crcTable[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+OA.xlsx.zip = files => {
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = typeof f.data === "string" ? enc.encode(f.data) : f.data, crc = OA.xlsx.crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, 0, true); h.setUint16(12, 0x21, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, 0, true); c.setUint16(14, 0x21, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    parts.push(new Uint8Array(h.buffer), name, data); central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((s, a) => s + a.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+  const all = [...parts, ...central, new Uint8Array(e.buffer)], out = new Uint8Array(all.reduce((s, a) => s + a.length, 0));
+  let p = 0; for (const a of all) { out.set(a, p); p += a.length; }
+  return out;
+};
+OA.xlsx.write = sheets => {
+  const x = s => String(s ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const col = n => { let s = ""; n++; while (n) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+  const serial = d => (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()) - Date.UTC(1899, 11, 30)) / 864e5;
+  const cell = (ref, val, style) => {
+    if (val && typeof val === "object" && !(val instanceof Date)) return cell(ref, val.v, val.s);
+    if (val === null || val === undefined || val === "") return style ? `<c r="${ref}" s="${style}"/>` : "";
+    if (val instanceof Date) return isNaN(val) ? "" : `<c r="${ref}" s="${style || 2}"><v>${serial(val)}</v></c>`;
+    if (typeof val === "number" && isFinite(val)) return `<c r="${ref}"${style ? ` s="${style}"` : ""}><v>${val}</v></c>`;
+    return `<c r="${ref}"${style ? ` s="${style}"` : ""} t="inlineStr"><is><t xml:space="preserve">${x(val)}</t></is></c>`;
+  };
+  const sheetXml = sh => {
+    const last = col(sh.cols.length - 1) + (sh.rows.length + 1);
+    const head = `<row r="1">${sh.cols.map((c, i) => cell(col(i) + 1, c.h, 1)).join("")}</row>`;
+    const body = sh.rows.map((r, ri) => `<row r="${ri + 2}">${r.map((v, i) => cell(col(i) + (ri + 2), v)).join("")}</row>`).join("");
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${sh.cols.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.w || 12}" customWidth="1"/>`).join("")}</cols><sheetData>${head}${body}</sheetData><autoFilter ref="A1:${last}"/></worksheet>`;
+  };
+  const files = [
+    {name: "[Content_Types].xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`},
+    {name: "_rels/.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {name: "xl/workbook.xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${x(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets><definedNames>${sheets.map((s, i) => `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${x(s.name)}'!$A$1:$${col(s.cols.length - 1)}$${s.rows.length + 1}</definedName>`).join("")}</definedNames></workbook>`},
+    {name: "xl/_rels/workbook.xml.rels", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name: "xl/styles.xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="dd/mm/yyyy hh:mm"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F4E79"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="4" borderId="0" xfId="0" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`},
+    ...sheets.map((s, i) => ({name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s)}))
+  ];
+  return OA.xlsx.zip(files);
+};
 OA.csv = text => {
   text = String(text).replace(/^﻿/, "");
   const first = text.split(/\r?\n/).find(l => l.trim()) || "";
@@ -413,6 +472,45 @@ OA.decide = (mail, p, oh) => {
 };
 
 /* ======================================================================
+   Registro de resultados (Excel)
+   Cada correo sencillo se registra una sola vez, con el Material OH que estaba
+   cargado al analizarlo. El registro no se recalcula si después cambia el OH.
+   ====================================================================== */
+OA.reg = {};
+OA.reg.LINEA = {ok: "Disponible", short: "Faltante", nf: "No está en OH", sin: "Sin OH"};
+/* Solo correos sencillos (Tipo 1) ya comparados contra un Material OH */
+OA.reg.aplica = (m, oh) => !!oh && !m.ejemplo && m.parsed && m.parsed.tipo === 1 && (m.decision.estado === "verde" || m.decision.estado === "rojo");
+OA.reg.entry = (m, oh) => {
+  const p = m.parsed, d = m.decision;
+  return {
+    id: m.id, analizado: new Date().toISOString(), recibido: m.received,
+    bo: p.bo || "", rdd: p.rdd || "", dias: d.days, evento: p.eventDate || "", cliente: p.customer || "", rep: p.rep || "",
+    remitente: m.fromName || "", remitenteCorreo: m.fromAddress || "", asunto: m.subject || "",
+    estado: d.estado, resultado: d.titulo, critico: !!d.critico, motivo: d.motivo || "",
+    oh: {archivo: oh.fileName || "", cargado: oh.loadedAt || ""},
+    lineas: d.lineas.map(l => ({item: l.item, desc: l.desc || "", qty: l.qty, oh: l.available, diff: l.diff, st: l.st}))
+  };
+};
+OA.reg.toXlsx = entries => {
+  const list = [...entries].sort((a, b) => new Date(b.recibido) - new Date(a.recibido));
+  const D = s => s ? new Date(s) : "";
+  const res = e => ({v: e.resultado, s: e.estado === "verde" ? 3 : 4});
+  const resumen = {name: "Resumen", cols: [
+    {h: "Fecha correo", w: 17}, {h: "Fecha análisis", w: 17}, {h: "BO#", w: 12}, {h: "RDD", w: 11}, {h: "Días para RDD", w: 9}, {h: "Event Date", w: 11},
+    {h: "Cliente", w: 30}, {h: "Rep", w: 30}, {h: "Remitente", w: 26}, {h: "Artículos", w: 10}, {h: "Con faltante", w: 12},
+    {h: "Resultado", w: 12}, {h: "Crítica", w: 8}, {h: "Detalle", w: 44}, {h: "Material OH", w: 28}, {h: "OH cargado", w: 17}, {h: "Asunto", w: 70}],
+    rows: list.map(e => [D(e.recibido), D(e.analizado), e.bo, e.rdd, e.dias ?? "", e.evento, e.cliente, e.rep, e.remitenteCorreo || e.remitente,
+      e.lineas.length, e.lineas.filter(l => l.st === "short" || l.st === "nf").length, res(e), e.critico ? "Sí" : "No", e.motivo, e.oh.archivo, D(e.oh.cargado), e.asunto])};
+  const detalle = {name: "Detalle", cols: [
+    {h: "Fecha correo", w: 17}, {h: "BO#", w: 12}, {h: "RDD", w: 11}, {h: "Cliente", w: 30}, {h: "Artículo", w: 14}, {h: "Descripción", w: 50},
+    {h: "Cantidad pedida", w: 10}, {h: "OH disponible", w: 10}, {h: "Diferencia", w: 10}, {h: "Estado artículo", w: 15}, {h: "Resultado del correo", w: 12}, {h: "Material OH", w: 28}],
+    rows: list.flatMap(e => e.lineas.map(l => [D(e.recibido), e.bo, e.rdd, e.cliente, l.item, l.desc, l.qty, l.oh ?? "", l.diff ?? "",
+      {v: l.st === "short" ? `Faltan ${-l.diff}` : OA.reg.LINEA[l.st] || l.st, s: l.st === "ok" ? 3 : l.st === "short" || l.st === "nf" ? 4 : 0}, res(e), e.oh.archivo]))};
+  return OA.xlsx.write([resumen, detalle]);
+};
+OA.reg.fileName = "Resultados_OrderApproval.xlsx";
+
+/* ======================================================================
    Respuestas rápidas
    ====================================================================== */
 OA.VARS = ["BO","RDD","EVENTO","CLIENTE","REP","ASUNTO","REMITENTE","ARTICULOS","FALTANTES","MOTIVO","FECHA","FIRMA"];
@@ -442,14 +540,16 @@ OA.textToHtml = t => "<div style=\"font-family:Calibri,Arial,sans-serif;font-siz
 /* ======================================================================
    Acciones (lo que ejecutan los flujos de Power Automate o la simulación)
    ====================================================================== */
-OA.FOLDERS = {verde: "OA Aprobar", rojo: "OA Shortage", naranja: "OA Revision", gris: "OA Sin validar"};
-OA.FLAGS = {verde: "complete", rojo: "flagged", naranja: "flagged", gris: "notFlagged"};
+/* Sin subcarpetas en el buzón: solo se marcan los correos sencillos (verde = palomita, rojo = bandera).
+   Los complejos (naranja) y los sin validar (gris) no se tocan en Outlook. */
+OA.FLAGS = {verde: "complete", rojo: "flagged", naranja: "notFlagged", gris: "notFlagged"};
+OA.CLASIFICABLE = e => e === "verde" || e === "rojo";
 OA.CATS = {verde: "OA Verde", rojo: "OA Rojo", naranja: "OA Naranja", gris: "OA Gris"};
 OA.makeAction = (kind, mail, extra = {}) => ({
   tipo: "OA-ACCION", version: 1, idAccion: OA.uid(), accion: kind,
   idCorreo: mail.id, internetMessageId: mail.internetMessageId || "", conversationId: mail.conversationId || "",
   bo: mail.parsed.bo || "", asuntoOriginal: mail.subject, remitente: mail.fromAddress || "",
-  resultado: mail.decision.estado, bandera: OA.FLAGS[mail.decision.estado], carpetaDestino: OA.FOLDERS[mail.decision.estado], categoria: OA.CATS[mail.decision.estado],
+  resultado: mail.decision.estado, bandera: OA.FLAGS[mail.decision.estado], categoria: OA.CATS[mail.decision.estado],
   para: "", cc: "", asunto: "", cuerpoTexto: "", cuerpoHtml: "",
   enviarEn: new Date().toISOString(), creado: new Date().toISOString(), estado: "pendiente", ...extra
 });
@@ -486,7 +586,7 @@ OA.ICON = (() => {
 OA.FLAG = estado => `<svg class="flag ${estado || ""}" viewBox="0 0 16 16" aria-hidden="true"><path d="${estado === "verde" ? "M6.2 11.4L2.6 7.8l1-1 2.6 2.6 6.2-6.2 1 1z" : "M3 1h1.5v14H3zM5.5 2h8l-2 3.5 2 3.5h-8z"}"/></svg>`;
 
 const A = OA.app = {
-  ver: "v1", adapter: null, mails: [], read: {}, actions: [], templates: [], settings: {firma: "", buzon: ""}, oh: null,
+  ver: "v1", adapter: null, mails: [], read: {}, actions: [], templates: [], settings: {firma: "", buzon: ""}, oh: null, registro: [],
   folder: "inbox", selected: null, filter: "todos", q: "", comp: null, ohUI: {mode: "articulo", q: ""}, tplSel: null, _save: {},
 
   async start(adapter) {
@@ -508,7 +608,8 @@ const A = OA.app = {
       </div>
       <input type="file" id="ohFile" accept=".xlsx,.xlsm,.csv,.txt,.tsv,.xls" hidden>
       <div id="toast" class="toast" role="status" hidden></div>`;
-    const [read, actions, templates, settings, oh] = await Promise.all([OA.db.get(`read:${A.ver}`), OA.db.get(`actions:${A.ver}`), OA.db.get("templates"), OA.db.get("settings"), OA.db.get(`oh:${A.ver}`)]);
+    const [read, actions, templates, settings, oh, registro] = await Promise.all([OA.db.get(`read:${A.ver}`), OA.db.get(`actions:${A.ver}`), OA.db.get("templates"), OA.db.get("settings"), OA.db.get(`oh:${A.ver}`), OA.db.get(`registro:${A.ver}`)]);
+    A.registro = Array.isArray(registro) ? registro : [];
     A.read = read || {}; A.actions = actions || []; A.templates = templates && templates.length ? templates : structuredClone(OA.DEFAULT_TEMPLATES);
     A.settings = {...A.settings, ...(settings || {})};
     try { A.oh = OA.oh.restore(oh); } catch (e) { A.oh = null; }
@@ -518,6 +619,9 @@ const A = OA.app = {
     if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register(adapter.sw || "../sw.js").catch(() => {});
   },
 
+  /* Funciones activas según la versión: V1 solo analiza y registra; V2 (simulación) conserva respuestas y clasificación */
+  F() { return {respuestas: true, clasificar: true, registro: false, ...(A.adapter && A.adapter.features || {})}; },
+
   /* ---------- datos ---------- */
   setMails(list) {
     const byId = new Map();
@@ -525,10 +629,41 @@ const A = OA.app = {
     A.mails = [...byId.values()].sort((a, b) => new Date(b.received) - new Date(a.received));
     A.mails.forEach(A.enrich);
     if (A.selected && !byId.has(A.selected)) A.selected = null;
+    A.autoRegistrar();
   },
-  addMail(m) { A.enrich(m); A.mails = [m, ...A.mails.filter(x => x.id !== m.id)].sort((a, b) => new Date(b.received) - new Date(a.received)); },
+  addMail(m) { A.enrich(m); A.mails = [m, ...A.mails.filter(x => x.id !== m.id)].sort((a, b) => new Date(b.received) - new Date(a.received)); A.autoRegistrar(); },
   enrich(m) { m.parsed = OA.parseEmail(m); m.decision = OA.decide(m, m.parsed, A.oh); return m; },
-  reclassify() { A.mails.forEach(m => m.decision = OA.decide(m, m.parsed, A.oh)); },
+  reclassify() { A.mails.forEach(m => m.decision = OA.decide(m, m.parsed, A.oh)); A.autoRegistrar(); },
+
+  /* ---------- registro en Excel ---------- */
+  regFor(id) { return A.registro.find(e => e.id === id); },
+  autoRegistrar() {
+    if (!A.F().registro || !A.oh || (A.adapter.canRegister && !A.adapter.canRegister(A))) return 0;
+    const ids = new Set(A.registro.map(e => e.id));
+    const nuevos = A.mails.filter(m => !ids.has(m.id) && OA.reg.aplica(m, A.oh)).map(m => OA.reg.entry(m, A.oh));
+    if (nuevos.length) { A.registro.push(...nuevos); A.guardarRegistro(); }
+    return nuevos.length;
+  },
+  mergeRegistro(list) {
+    if (!Array.isArray(list)) return;
+    const ids = new Set(A.registro.map(e => e.id)); let n = 0;
+    for (const e of list) if (e && e.id && !ids.has(e.id)) { A.registro.push(e); ids.add(e.id); n++; }
+    if (n) OA.db.set(`registro:${A.ver}`, A.registro);
+  },
+  guardarRegistro(now) {
+    OA.db.set(`registro:${A.ver}`, A.registro);
+    clearTimeout(A._regT);
+    const go = async () => { if (A.adapter.saveRegistro) { A.regStatus = await A.adapter.saveRegistro(A).catch(e => ({ok: false, msg: e.message})); if (now || !A.regStatus.ok) OA.toast(A.regStatus.msg); A.render(); } };
+    if (now) return go(); A._regT = setTimeout(go, 800);
+  },
+  reanalizar(id) {
+    const m = A.mail(id); if (!m) return;
+    if (!A.oh) { OA.toast("Carga el Material OH para analizar"); return; }
+    if (!OA.reg.aplica(m, A.oh)) { OA.toast("Solo se analizan correos sencillos"); return; }
+    A.registro = A.registro.filter(e => e.id !== id);
+    A.registro.push(OA.reg.entry(m, A.oh)); A.guardarRegistro(); A.render(); OA.toast("Análisis actualizado en el registro");
+  },
+  descargarExcel() { OA.download(OA.reg.fileName, OA.reg.toXlsx(A.registro), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); },
   save(key, value, delay = 250) { clearTimeout(A._save[key]); A._save[key] = setTimeout(() => OA.db.set(key, value), delay); },
   saveActions() { A.save(`actions:${A.ver}`, A.actions); },
   mail(id) { return A.mails.find(m => m.id === id); },
@@ -538,6 +673,7 @@ const A = OA.app = {
     return A.mails.filter(m => {
       if (["verde","rojo","naranja","gris"].includes(A.folder) && m.decision.estado !== A.folder) return false;
       if (A.filter === "noleidos" && A.read[m.id]) return false;
+      if (A.filter === "sinregistro" && (A.regFor(m.id) || m.parsed.tipo !== 1)) return false;
       if (A.filter === "sinrespuesta" && A.actionsFor(m.id).some(a => a.accion === "responder" && a.estado !== "cancelada")) return false;
       if (!q) return true;
       return [m.subject, m.fromName, m.fromAddress, m.parsed.bo, m.parsed.customer, m.bodyText.slice(0, 4000), ...m.parsed.items.map(i => i.item)].some(s => OA.oh.fold(s).includes(q));
@@ -558,7 +694,7 @@ const A = OA.app = {
     if (ok) { a.estado = "cancelada"; A.saveActions(); A.render(); OA.toast("Acción cancelada"); }
   },
   classifyAll() {
-    const pend = A.mails.filter(m => m.decision.estado !== "gris" && !A.actionsFor(m.id).some(a => a.accion === "clasificar" && a.estado !== "cancelada" && a.resultado === m.decision.estado));
+    const pend = A.mails.filter(m => OA.CLASIFICABLE(m.decision.estado) && !A.actionsFor(m.id).some(a => a.accion === "clasificar" && a.estado !== "cancelada" && a.resultado === m.decision.estado));
     if (!pend.length) { OA.toast("Todo está clasificado"); return; }
     (async () => { for (const m of pend) { const a = OA.makeAction("clasificar", m); const done = await A.adapter.submitAction(A, a).catch(e => { OA.toast(e.message); return null; }); if (!done) break; A.actions.unshift(done); } A.saveActions(); A.render(); OA.toast(`${pend.length} correo${pend.length > 1 ? "s" : ""} enviados a clasificar`); })();
   },
@@ -569,7 +705,8 @@ const A = OA.app = {
   renderCmd() {
     const cmds = [...A.adapter.commands(A), "|",
       {id: "oh-load", label: A.oh ? "Material OH" : "Cargar Material OH", icon: "box", primary: !A.oh},
-      {id: "classify-all", label: "Clasificar en Outlook", icon: "tag", disabled: !A.mails.length}];
+      ...(A.F().clasificar ? [{id: "classify-all", label: "Clasificar en Outlook", icon: "tag", disabled: !A.mails.length}] : []),
+      ...(A.F().registro ? [{id: "reg-save", label: "Guardar Excel", icon: "tpl", disabled: !A.registro.length}] : [])];
     OA.$("#cmdbar").innerHTML = cmds.map(c => c === "|" ? `<span class="sep"></span>` : `<button class="cmd${c.primary ? " primary" : ""}" data-cmd="${c.id}" type="button"${c.disabled ? " disabled" : ""}>${OA.ICON(c.icon)}<span>${OA.esc(c.label)}</span></button>`).join("");
   },
   renderNav() {
@@ -582,12 +719,13 @@ const A = OA.app = {
       <div class="grp">Order Approval</div>
       ${f("inbox", "Bandeja de entrada", OA.ICON("inbox"), unread("inbox"))}
       ${["verde","rojo","naranja","gris"].map(e => f(e, OA.LABEL[e], `<span class="sq" style="background:${color[e]}"></span>`, unread(e), total(e))).join("")}
-      <div class="grp">Respuestas</div>
+      ${A.F().respuestas ? `<div class="grp">Respuestas</div>
       ${f("programadas", "Programadas", OA.ICON("clock"), prog)}
-      ${f("enviadas", "Enviadas", OA.ICON("send"), 0, sent)}
+      ${f("enviadas", "Enviadas", OA.ICON("send"), 0, sent)}` : ""}
       <div class="grp">Herramientas</div>
+      ${A.F().registro ? f("registro", "Registro Excel", OA.ICON("tpl"), 0, A.registro.length) : ""}
       ${f("oh", "Material OH", OA.ICON("box"), 0, A.oh ? "✓" : "")}
-      ${f("plantillas", "Respuestas rápidas", OA.ICON("tpl"), 0, A.templates.length)}
+      ${A.F().respuestas ? f("plantillas", "Respuestas rápidas", OA.ICON("tpl"), 0, A.templates.length) : ""}
       ${A.adapter.views.map(v => f(v.id, v.label, OA.ICON(v.icon), 0, v.badge ? v.badge(A) : "")).join("")}`;
   },
   renderList() {
@@ -602,7 +740,7 @@ const A = OA.app = {
     OA.$("#list").innerHTML = `
       <header><h2>${OA.esc(title)}</h2><span class="muted" style="font-size:12.5px">${list.length}</span></header>
       <div class="pills" role="group" aria-label="Filtro">
-        ${[["todos","Todos"],["noleidos","No leídos"],["sinrespuesta","Sin respuesta"]].map(([k, l]) => `<button class="pill-f" type="button" data-filter="${k}" aria-pressed="${A.filter === k}">${l}</button>`).join("")}
+        ${[["todos","Todos"],["noleidos","No leídos"], A.F().respuestas ? ["sinrespuesta","Sin respuesta"] : A.F().registro ? ["sinregistro","Sin registrar"] : null].filter(Boolean).map(([k, l]) => `<button class="pill-f" type="button" data-filter="${k}" aria-pressed="${A.filter === k}">${l}</button>`).join("")}
       </div>
       <div class="items" role="listbox" aria-label="Correos">${groups.join("") || `<div class="empty">${A.mails.length ? "Sin resultados" : A.adapter.emptyText(A)}</div>`}</div>`;
   },
@@ -615,6 +753,7 @@ const A = OA.app = {
     if (d.critico) tags += `<span class="cat rojo plain">Crítica</span>`;
     if (reply) tags += `<span class="cat azul plain">${["enviada","procesada"].includes(reply.estado) ? "Respondida" : new Date(reply.enviarEn) > new Date() ? "Programada " + OA.fmtTime(reply.enviarEn) : "En cola"}</span>`;
     if (cls && ["enviada","procesada"].includes(cls.estado)) tags += `<span class="cat gris plain">En Outlook</span>`;
+    if (A.F().registro && A.regFor(m.id)) tags += `<span class="cat azul plain">En Excel</span>`;
     return `<div class="mi${unread ? " unread" : ""}" role="option" tabindex="0" data-id="${OA.esc(m.id)}" aria-selected="${A.selected === m.id}">
       <div class="av" style="background:${OA.avatarColor(m.fromName)}">${OA.esc(OA.initials(m.fromName))}</div>
       <div style="min-width:0"><div class="l1"><span class="from">${OA.esc(m.fromName)}</span><span class="time">${OA.fmtTime(m.received)}</span></div>
@@ -626,7 +765,11 @@ const A = OA.app = {
     main.classList.toggle("reading", !!m);
     if (!m) { OA.$("#read").innerHTML = `<div class="empty" style="padding-top:80px">${OA.ICON("mail", "flag")}<br>Selecciona un correo</div>`; return; }
     const p = m.parsed, d = m.decision, days = d.days;
-    const acts = A.actionsFor(m.id);
+    const acts = A.actionsFor(m.id), reg = A.F().registro ? A.regFor(m.id) : null;
+    const regInfo = !A.F().registro ? "" : reg
+      ? `<div class="note ok">Registrado en Excel el ${OA.esc(OA.fmtFull(reg.analizado))} con <b>${OA.esc(reg.oh.archivo || "Material OH")}</b> · resultado <b>${OA.esc(reg.resultado)}</b>${reg.estado !== d.estado ? ` · con el Material OH actual daría <b>${OA.esc(d.titulo)}</b>` : ""}</div>`
+      : p.tipo !== 1 ? `<div class="note">Correo complejo: no se analiza ni se registra en Excel. Revísalo manualmente.</div>`
+      : !A.oh ? `<div class="note">Carga el Material OH para analizar y registrar este correo.</div>` : "";
     const rows = d.lineas.map(l => `<tr class="${l.st === "short" || l.st === "nf" ? "hl" : ""}"><td class="mono">${OA.esc(l.item)}</td><td>${OA.esc(l.desc || "—")}</td><td class="num">${l.qty}</td><td class="num">${l.available === null ? "—" : l.available}</td><td class="num${l.diff !== null && l.diff < 0 ? " neg" : ""}">${l.diff === null ? "—" : (l.diff > 0 ? "+" : "") + l.diff}</td><td>${{ok: `<span class="cat verde">Disponible</span>`, short: `<span class="cat rojo">Faltan ${-l.diff}</span>`, nf: `<span class="cat rojo">No está en OH</span>`, sin: `<span class="cat gris">Sin OH</span>`}[l.st]}</td></tr>`).join("");
     const estadoTxt = a => ({pendiente: "En cola", programada: "Programada", enviada: "Enviada", procesada: "Aplicada", cancelada: "Cancelada", error: "Error"})[a.estado] || a.estado;
     OA.$("#read").innerHTML = `<div class="read-inner">
@@ -639,11 +782,13 @@ const A = OA.app = {
         <div style="display:flex;gap:8px;align-items:center">${m.hasAttachments ? OA.ICON("attach", "clip") : ""}${OA.FLAG(d.estado)}</div>
       </div>
       <div class="acts">
-        <button class="btn primary" type="button" data-act="reply">${OA.ICON("reply")}Responder rápido</button>
-        <button class="btn" type="button" data-act="schedule">${OA.ICON("clock")}Programar respuesta</button>
-        <button class="btn" type="button" data-act="classify">${OA.ICON("tag")}Clasificar en Outlook</button>
+        ${A.F().respuestas ? `<button class="btn primary" type="button" data-act="reply">${OA.ICON("reply")}Responder rápido</button>
+        <button class="btn" type="button" data-act="schedule">${OA.ICON("clock")}Programar respuesta</button>` : ""}
+        ${A.F().clasificar ? `<button class="btn" type="button" data-act="classify">${OA.ICON("tag")}Clasificar en Outlook</button>` : ""}
+        ${A.F().registro && reg ? `<button class="btn" type="button" data-act="reg-redo">${OA.ICON("refresh")}Volver a analizar</button>` : ""}
         <button class="btn" type="button" data-act="unread">${OA.ICON("mail")}${A.read[m.id] ? "Marcar como no leído" : "Marcar como leído"}</button>
       </div>
+      ${regInfo}
       ${A.comp && A.comp.mailId === m.id ? A.composerHtml(m) : ""}
       <div class="verdict ${d.estado}"><div class="bar"></div><div class="in">
         <div class="top"><span class="big">${OA.esc(d.titulo)}</span>${d.critico ? `<span class="cat rojo">Crítica · RDD en ${days} día${days === 1 ? "" : "s"}</span>` : ""}<span class="muted" style="font-size:13px">${OA.esc(d.motivo)}</span></div>
@@ -705,6 +850,7 @@ const A = OA.app = {
   renderView() {
     const v = OA.$("#view"); OA.$("#main").classList.remove("reading");
     if (A.folder === "oh") return A.viewOH(v);
+    if (A.folder === "registro") return A.viewRegistro(v);
     if (A.folder === "plantillas") return A.viewTemplates(v);
     if (A.folder === "programadas" || A.folder === "enviadas") return A.viewActions(v);
     const ext = A.adapter.views.find(x => x.id === A.folder); if (ext) ext.render(v, A);
@@ -720,6 +866,28 @@ const A = OA.app = {
         <td>${a.accion === "responder" ? OA.esc(a.para) : `<span class="cat ${a.resultado}">${OA.esc(a.categoria)}</span>`}</td><td>${OA.esc(a.accion === "responder" ? a.asunto : a.asuntoOriginal)}</td><td>${st(a)}</td>
         <td style="white-space:nowrap">${A.mail(a.idCorreo) ? `<button class="btn sm" type="button" data-open="${OA.esc(a.idCorreo)}">Abrir</button> ` : ""}${done ? "" : `<button class="btn sm danger" type="button" data-cancel="${a.idAccion}">Cancelar</button>`}</td></tr>`).join("")}
       </tbody></table></div>` : `<div class="empty">${done ? "Sin envíos" : "Sin respuestas programadas"}</div>`}</div>`;
+  },
+  viewRegistro(v) {
+    const list = [...A.registro].sort((a, b) => new Date(b.recibido) - new Date(a.recibido));
+    const n = e => list.filter(x => x.estado === e).length, lines = list.reduce((s, e) => s + e.lineas.length, 0);
+    const pend = A.oh ? A.mails.filter(m => !A.regFor(m.id) && OA.reg.aplica(m, A.oh)).length : 0;
+    const noAnal = A.mails.filter(m => m.parsed.tipo !== 1).length;
+    const st = A.regStatus;
+    v.innerHTML = `<div class="view-inner"><h2>Registro Excel</h2>
+      <div class="card"><div class="ch"><h3>${OA.esc(OA.reg.fileName)}</h3><span class="acts">
+          <button class="btn primary sm" type="button" data-cmd="reg-save"${list.length ? "" : " disabled"}>${OA.ICON("tpl")}Guardar Excel</button>
+          <button class="btn sm" type="button" data-act="reg-download"${list.length ? "" : " disabled"}>${OA.ICON("upload")}Descargar copia</button></span></div>
+        <div class="cb"><div class="stats"><span>Correos registrados <b>${list.length}</b></span><span>Aprobar <b>${n("verde")}</b></span><span>Shortage / Sin BO# <b>${n("rojo")}</b></span><span>Artículos <b>${lines}</b></span><span>Complejos sin analizar <b>${noAnal}</b></span>${pend ? `<span>Pendientes <b>${pend}</b></span>` : ""}</div>
+          ${st ? `<div class="note${st.ok ? " ok" : ""}">${OA.esc(st.msg)}</div>` : ""}
+          ${!A.oh ? `<div class="note">Carga el Material OH: sin él no se analiza ni se registra ningún correo.</div>` : ""}
+          <p class="muted" style="font-size:12.5px;margin:8px 0 0">Solo se registran correos sencillos (formato PRDF con líneas Item / Qty), una vez cada uno, con el Material OH cargado en ese momento. El libro tiene dos hojas: <b>Resumen</b> (un renglón por correo) y <b>Detalle</b> (un renglón por artículo).</p></div></div>
+      ${list.length ? `<div class="tw"><table><thead><tr><th>Correo</th><th>BO#</th><th>RDD</th><th>Cliente</th><th class="num">Artículos</th><th class="num">Faltantes</th><th>Resultado</th><th>Material OH</th><th></th></tr></thead><tbody>
+        ${list.slice(0, 300).map(e => `<tr><td class="mono">${OA.esc(OA.fmtTime(e.recibido))}</td><td class="mono">${OA.esc(e.bo || "—")}</td><td class="mono">${OA.esc(e.rdd || "—")}</td><td>${OA.esc(e.cliente || "—")}</td>
+          <td class="num">${e.lineas.length}</td><td class="num">${e.lineas.filter(l => l.st === "short" || l.st === "nf").length}</td>
+          <td><span class="cat ${e.estado}">${OA.esc(e.resultado)}</span>${e.critico ? ` <span class="cat rojo plain">Crítica</span>` : ""}</td><td>${OA.esc(e.oh.archivo)}</td>
+          <td>${A.mail(e.id) ? `<button class="btn sm" type="button" data-open="${OA.esc(e.id)}">Abrir</button>` : ""}</td></tr>`).join("")}
+        </tbody></table></div>${list.length > 300 ? `<span class="muted" style="font-size:12.5px">Se muestran 300 de ${list.length}. El Excel tiene todos.</span>` : ""}` : `<div class="empty">Aún no hay correos registrados</div>`}
+    </div>`;
   },
   viewOH(v) {
     const st = A.oh, u = A.ohUI;
@@ -816,6 +984,7 @@ const A = OA.app = {
       if (ds.cmd) {
         if (ds.cmd === "oh-load") return OA.$("#ohFile").click();
         if (ds.cmd === "classify-all") return A.classifyAll();
+        if (ds.cmd === "reg-save") return A.guardarRegistro(true);
         return A.adapter.command(A, ds.cmd);
       }
       if (ds.header && A.oh) { A.oh.header = ds.header; A.oh.startRow = null; return A.ohChanged(true); }
@@ -830,7 +999,9 @@ const A = OA.app = {
         case "discard": A.comp = null; A.renderRead(); break;
         case "send-now": A.sendComposer(false); break;
         case "send-later": A.sendComposer(true); break;
-        case "classify": if (m) { if (m.decision.estado === "gris") { OA.toast("Carga el Material OH para clasificar"); break; } const a = OA.makeAction("clasificar", m); if (await A.submit(a)) OA.toast(`Clasificación enviada: ${a.categoria}`); } break;
+        case "classify": if (m) { if (m.decision.estado === "gris") { OA.toast("Carga el Material OH para clasificar"); break; } if (!OA.CLASIFICABLE(m.decision.estado)) { OA.toast("Los correos complejos se revisan a mano y no llevan bandera"); break; } const a = OA.makeAction("clasificar", m); if (await A.submit(a)) OA.toast(`Clasificación enviada: ${a.categoria}`); } break;
+        case "reg-download": A.descargarExcel(); break;
+        case "reg-redo": if (m) A.reanalizar(m.id); break;
         case "unread": if (m) { A.read[m.id] = !A.read[m.id]; A.save(`read:${A.ver}`, A.read); A.renderNav(); A.renderList(); A.renderRead(); } break;
         case "oh-clear": A.oh = null; await OA.db.del(`oh:${A.ver}`); A.reclassify(); A.render(); OA.toast("Material OH quitado"); break;
         case "tpl-new": { const n = {id: "t-" + OA.uid(), nombre: "Nueva respuesta", para: "", asunto: "RE: {ASUNTO}", cuerpo: "Hello,\n\n\n\nRegards,\n{FIRMA}"}; A.templates.push(n); A.tplSel = n.id; OA.db.set("templates", A.templates); A.render(); break; }
