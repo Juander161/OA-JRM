@@ -57,14 +57,34 @@ Crea en `OrderApproval` un libro llamado **`OrderApproval.xlsx`** con cinco hoja
 
 ### 2.1 Hoja `MaterialOH` · tabla `tblOH`
 
-| Articulo | Descripcion | OH |
+La tabla usa **los mismos encabezados del reporte Material OH**, en el mismo orden, para poder pegarlo tal como sale:
+
+| Item | Item2 | Locator | Item Description | On-hand Qty |
+|---|---|---|---|---|
+| Número de artículo | Categoría (accessory, gown…) | Ubicación | Descripción completa (colores, estilos…) | Existencia |
+
+Las fórmulas solo usan **`Item`**, **`Item Description`** y **`On-hand Qty`**. `Item2` y `Locator` se quedan en la tabla pero no se usan. Si un artículo aparece en varias ubicaciones (`Locator`), las fórmulas **suman** la existencia de todas sus filas.
+
+**Paso 1 · Crear la tabla.** Llénala con la [sección 3](#3-cargar-el-material-oh-con-o-sin-encabezado) (Opción A u Opción B). Después selecciona cualquier celda de la tabla → **Diseño de tabla → Nombre de la tabla** → escribe `tblOH` → Enter.
+
+**Paso 2 · Crear tres nombres para las fórmulas.** Las fórmulas no usan los encabezados directamente: usan tres nombres cortos. Así, si algún día el reporte cambia un encabezado, solo se corrige aquí y no en cada fórmula.
+
+1. **Fórmulas → Administrador de nombres → Nuevo**.
+2. En **Nombre** escribe uno de los tres nombres de la tabla de abajo (`OH_Item`, `OH_Desc` u `OH_Qty`), exactamente así.
+3. En **Se refiere a**, borra lo que tenga y, **con el mouse**, selecciona la columna correspondiente dentro de la tabla: pasa el cursor sobre la parte de arriba del encabezado hasta que aparezca una **flecha negra hacia abajo** y haz clic. Excel escribe solo la referencia correcta (como aparece en la tabla, aunque el encabezado tenga punto, guion o espacios).
+4. **Aceptar**. Repite para los tres nombres.
+
+| Nombre | Columna que seleccionas | Excel debe mostrar algo como |
 |---|---|---|
+| `OH_Item` | `Item` | `=tblOH[Item]` |
+| `OH_Desc` | `Item Description` | `=tblOH[Item Description]` |
+| `OH_Qty` | `On-hand Qty` | `=tblOH[On-hand Qty]` |
 
-Formato: `Articulo` como **Texto**, `OH` como **Número**. Se llena en la [sección 3](#3-cargar-el-material-oh-con-o-sin-encabezado).
+> Selecciona la columna **`Item`**, no `Item2`.
 
-> **Crea esta tabla antes que `tblCorreos`.** Las fórmulas `Faltantes` y `Detalle` la usan. Si la tabla no existe, o su nombre o sus encabezados son distintos, Excel marca *"There's a problem with this formula"* / *"Hay un problema con esta fórmula"*. Los nombres deben ser exactos: tabla `tblOH`, columnas `Articulo` y `OH`, **sin acentos ni espacios**.
->
-> **Comprobación rápida:** en cualquier celda vacía escribe `=SUM(tblOH[OH])` (en español `=SUMA(tblOH[OH])`) y presiona Enter. Si muestra un número (aunque sea `0`), la tabla está bien; borra la celda. Si aparece el mensaje de error, revisa el nombre en **Diseño de tabla → Nombre de la tabla** y los encabezados.
+**Paso 3 · Comprobación rápida.** En cualquier celda vacía escribe `=SUM(OH_Qty)` (en español `=SUMA(OH_Qty)`) y presiona Enter. Si muestra la existencia total, todo está bien: borra la celda. Si aparece *"There's a problem with this formula"* o `#NAME?` / `#¿NOMBRE?`, revisa los nombres en **Fórmulas → Administrador de nombres**.
+
+> **Haz los pasos 1 a 3 antes de pegar las fórmulas de `tblCorreos`.** `Faltantes` y `Detalle` usan estos nombres; si no existen, Excel rechaza la fórmula.
 
 ### 2.2 Hoja `Correos` · tabla `tblCorreos`
 
@@ -118,9 +138,9 @@ Para que las fórmulas se puedan capturar, escribe una fila de prueba en A2:F2 (
 
 **L · Faltantes** (artículos sin existencia suficiente; `-1` = formato no reconocido)
 
-> Antes de pegar `Faltantes` y `Detalle`, haz la comprobación rápida de `tblOH` de la [sección 2.1](#21-hoja-materialoh--tabla-tbloh). Estas dos fórmulas también usan las columnas `Articulos` y `Tipo` de esta tabla: deben existir con esos nombres exactos (`Articulos` sin acento).
+> Antes de pegar `Faltantes` y `Detalle`, deben existir los nombres `OH_Item`, `OH_Desc` y `OH_Qty` de la [sección 2.1](#21-hoja-materialoh--tabla-tbloh). Estas dos fórmulas también usan las columnas `Articulos` y `Tipo` de esta tabla: deben existir con esos nombres exactos (`Articulos` sin acento).
 ```
-=IF(OR([@Articulos]=0,[@Tipo]="COMPLEJO"),0,IFERROR(LET(partes,DROP(TEXTSPLIT([@Cuerpo],"Item ["),,1),art,TRIM(TEXTBEFORE(partes,"]")),cant,VALUE(TRIM(TEXTBEFORE(TEXTAFTER(partes,"Qty ["),"]"))),inv,SUMIFS(tblOH[OH],tblOH[Articulo],art),SUM(--(inv<cant))),-1))
+=IF(OR([@Articulos]=0,[@Tipo]="COMPLEJO"),0,IFERROR(LET(partes,DROP(TEXTSPLIT([@Cuerpo],"Item ["),,1),art,TRIM(TEXTBEFORE(partes,"]")),cant,VALUE(TRIM(TEXTBEFORE(TEXTAFTER(partes,"Qty ["),"]"))),inv,SUMIFS(OH_Qty,OH_Item,art),SUM(--(inv<cant))),-1))
 ```
 
 **M · Resultado** (`VERDE`, `ROJO` o `NARANJA`)
@@ -133,9 +153,9 @@ Para que las fórmulas se puedan capturar, escribe una fila de prueba en A2:F2 (
 =IF(AND([@Resultado]="ROJO",ISNUMBER([@DiasRDD])),IF([@DiasRDD]<=7,"CRITICA","NORMAL"),"NORMAL")
 ```
 
-**O · Detalle** (tabla HTML con la comparación)
+**O · Detalle** (tabla HTML con la comparación: artículo, descripción del Material OH, cantidad pedida, existencia y estado)
 ```
-=IF(OR([@Articulos]=0,[@Tipo]="COMPLEJO"),"<p>Correo complejo: revisión manual.</p>",IFERROR(LET(partes,DROP(TEXTSPLIT([@Cuerpo],"Item ["),,1),art,TRIM(TEXTBEFORE(partes,"]")),cant,VALUE(TRIM(TEXTBEFORE(TEXTAFTER(partes,"Qty ["),"]"))),inv,SUMIFS(tblOH[OH],tblOH[Articulo],art),filas,"<tr><td>"&art&"</td><td align=right>"&cant&"</td><td align=right>"&inv&"</td><td>"&IF(inv>=cant,"OK","FALTAN "&(cant-inv))&"</td></tr>","<table border=1 cellpadding=4 cellspacing=0><tr><th>Artículo</th><th>Pide</th><th>OH</th><th>Estado</th></tr>"&TEXTJOIN("",TRUE,filas)&"</table>"),"<p>Formato no reconocido.</p>"))
+=IF(OR([@Articulos]=0,[@Tipo]="COMPLEJO"),"<p>Correo complejo: revisión manual.</p>",IFERROR(LET(partes,DROP(TEXTSPLIT([@Cuerpo],"Item ["),,1),art,TRIM(TEXTBEFORE(partes,"]")),cant,VALUE(TRIM(TEXTBEFORE(TEXTAFTER(partes,"Qty ["),"]"))),inv,SUMIFS(OH_Qty,OH_Item,art),des,XLOOKUP(art,OH_Item&"",OH_Desc,"NO ESTA EN OH"),filas,"<tr><td>"&art&"</td><td>"&des&"</td><td align=right>"&cant&"</td><td align=right>"&inv&"</td><td>"&IF(inv>=cant,"OK","FALTAN "&(cant-inv))&"</td></tr>","<table border=1 cellpadding=4 cellspacing=0><tr><th>Artículo</th><th>Descripción</th><th>Pide</th><th>OH</th><th>Estado</th></tr>"&TEXTJOIN("",TRUE,filas)&"</table>"),"<p>Formato no reconocido.</p>"))
 ```
 
 **P · Etiqueta** (asunto del resumen)
@@ -209,14 +229,22 @@ Elige **una** de las dos opciones.
 
 ### Opción A · Copiar y pegar (diario, 2 minutos)
 
-1. Abre el archivo Material OH.
-2. Identifica las tres columnas que se necesitan: **artículo**, **descripción** y **existencia (On Hand)**.
-3. En `OrderApproval.xlsx` → hoja `MaterialOH`: selecciona las filas de datos de `tblOH` → clic derecho → **Eliminar → Filas de la tabla**.
-4. Copia la columna de artículos del Material OH:
-   - **Con encabezado:** empieza a copiar desde la **segunda** fila.
-   - **Sin encabezado:** empieza desde la **primera** fila.
-5. Pégala en la primera celda de datos de `Articulo` con **Pegado especial → Valores**. Repite con descripción → `Descripcion` y existencia → `OH`.
-6. Si un artículo aparece en varias filas (varios almacenes o ubicaciones), déjalas todas: las fórmulas suman la existencia.
+**La primera vez:**
+
+1. Abre el archivo Material OH, selecciona todo (`Ctrl + A`) y cópialo (`Ctrl + C`).
+2. En `OrderApproval.xlsx` → hoja `MaterialOH` → celda `A1` → **Pegado especial → Valores**.
+   - **Con encabezado:** la fila 1 ya trae `Item`, `Item2`, `Locator`, `Item Description`, `On-hand Qty`.
+   - **Sin encabezado:** antes de pegar, inserta una fila arriba y escribe esos cinco encabezados en `A1:E1`; pega los datos desde `A2`.
+3. Con una celda de los datos seleccionada: **Insertar → Tabla** → marca *La tabla tiene encabezados* → **Aceptar**.
+4. Continúa con los pasos 1 a 3 de la [sección 2.1](#21-hoja-materialoh--tabla-tbloh) (nombre `tblOH`, los tres nombres y la comprobación).
+
+**Cada día:**
+
+1. En la hoja `MaterialOH`, selecciona todas las filas de datos de `tblOH` (sin el encabezado) → clic derecho → **Eliminar → Filas de la tabla**.
+2. En el Material OH nuevo copia los datos **sin el encabezado** (desde la fila 2; si no trae encabezado, desde la fila 1), con las cinco columnas.
+3. Pégalos en la primera celda de datos de `Item` (`A2`) con **Pegado especial → Valores**. La tabla crece sola y los nombres `OH_Item`, `OH_Desc` y `OH_Qty` se ajustan solos.
+
+> Las columnas del archivo deben venir en el mismo orden que la tabla: `Item`, `Item2`, `Locator`, `Item Description`, `On-hand Qty`. Si un día el reporte cambia de orden, acomoda las columnas antes de pegar.
 
 ### Opción B · Power Query (se configura una vez y cada día solo se actualiza)
 
@@ -228,12 +256,11 @@ En **Excel de escritorio**:
    - **Con encabezado:** revisa que en *Pasos aplicados* exista **Encabezados promovidos**. Si no aparece: **Inicio → Usar la primera fila como encabezado**.
    - **Sin encabezado:** si aparece **Encabezados promovidos**, bórralo con la **X**. Las columnas quedan como `Column1`, `Column2`…
    - **Con filas de título antes del encabezado:** **Inicio → Quitar filas → Quitar filas superiores** con el número de filas de título, y después **Usar la primera fila como encabezado**.
-4. Con **Ctrl + clic** selecciona las columnas de artículo, descripción y existencia → clic derecho → **Quitar otras columnas**.
-5. Cambia el nombre con doble clic en cada encabezado: `Articulo`, `Descripcion`, `OH`.
-6. Tipos: clic en el ícono junto al encabezado → `Articulo` = **Texto**, `OH` = **Número decimal**.
-7. (Opcional) **Inicio → Agrupar por** → *Avanzado* → agrupar por `Articulo` y `Descripcion` → nueva columna `OH` = **Suma** de `OH`.
-8. **Inicio → Cerrar y cargar en… → Tabla → Hoja de cálculo existente** → `MaterialOH!$A$1`.
-9. Borra la tabla `tblOH` vacía de la sección 2.1 si quedó duplicada, y en **Diseño de tabla** cambia el nombre de la tabla cargada a **`tblOH`**.
+4. **No quites ni cambies el nombre de las columnas.** Deben quedar `Item`, `Item2`, `Locator`, `Item Description` y `On-hand Qty`. Si el archivo no trae encabezado, cambia el nombre de `Column1`…`Column5` a esos cinco con doble clic en cada encabezado.
+5. Tipos: clic en el ícono junto al encabezado → `Item` = **Texto**, `On-hand Qty` = **Número decimal**.
+6. **Inicio → Cerrar y cargar en… → Tabla → Hoja de cálculo existente** → `MaterialOH!$A$1`.
+7. En **Diseño de tabla → Nombre de la tabla** cambia el nombre de la tabla cargada a **`tblOH`**. Si antes habías creado una tabla `tblOH` a mano, bórrala **antes** de este paso.
+8. Continúa con los pasos 2 y 3 de la [sección 2.1](#21-hoja-materialoh--tabla-tbloh) (los tres nombres y la comprobación).
 
 Cada día: reemplaza el archivo Material OH con el nuevo (mismo nombre y carpeta) → abre `OrderApproval.xlsx` → **Datos → Actualizar todo** → **Guardar** → cierra Excel de escritorio.
 
@@ -260,23 +287,23 @@ Hoja `Buscar`:
 
 **A5 · Resultados** (búsqueda exacta, parcial o por descripción)
 ```
-=LET(q,TRIM($B$2),modo,$B$3,art,tblOH[Articulo]&"",m,IF(modo="Artículo",art=q,IF(modo="Contiene",ISNUMBER(SEARCH(q,art)),ISNUMBER(SEARCH(q,tblOH[Descripcion])))),IF(q="","",FILTER(tblOH,m,"Sin resultados")))
+=LET(q,TRIM($B$2),modo,$B$3,art,OH_Item&"",m,IF(modo="Artículo",art=q,IF(modo="Contiene",ISNUMBER(SEARCH(q,art)),ISNUMBER(SEARCH(q,OH_Desc)))),IF(q="","",FILTER(tblOH,m,"Sin resultados")))
 ```
 En modo **Descripción** usa `*` entre palabras para buscar varias en cualquier parte: `gown*navy`.
 
 **E2 · Total OH del artículo**
 ```
-=IF($B$2="","",SUMIFS(tblOH[OH],tblOH[Articulo],TRIM($B$2)))
+=IF($B$2="","",SUMIFS(OH_Qty,OH_Item,TRIM($B$2)))
 ```
 
 **H6 · OH de la lista** (cópiala hacia abajo hasta H200)
 ```
-=IF(G6="","",SUMIFS(tblOH[OH],tblOH[Articulo],G6))
+=IF(G6="","",SUMIFS(OH_Qty,OH_Item,G6))
 ```
 
 **I6 · Estado de la lista** (cópiala hacia abajo hasta I200)
 ```
-=IF(G6="","",IF(COUNTIFS(tblOH[Articulo],G6)=0,"NO EXISTE","OK"))
+=IF(G6="","",IF(COUNTIFS(OH_Item,G6)=0,"NO EXISTE","OK"))
 ```
 
 ---
@@ -452,7 +479,7 @@ Envía desde el buzón compartido una respuesta preparada en la hoja `Respuestas
 | 2 | Igual, con `Qty` mayor a la existencia y RDD en 3 días | `ROJO` · `CRITICA` · bandera roja · resumen rojo con `FALTAN n` |
 | 3 | Igual, sin `BO#` en el asunto | `ROJO` · resumen `[ROJO] BO# SIN BO#` |
 | 4 | `RE: ` + asunto de la prueba 1 con texto libre | `NARANJA` · sin marca en el buzón · resumen naranja |
-| 5 | Con un artículo que no existe en el Material OH | `ROJO` (existencia 0) |
+| 5 | Con un artículo que no existe en el Material OH | `ROJO` (existencia 0) · en `Detalle` la descripción dice `NO ESTA EN OH` |
 | 6 | Fila en `Respuestas` programada a +5 min y ejecutar OA-B | Llega la respuesta y `Estado` = `Enviada` |
 | 7 | Igual que 6, pero cambiar `Estado` a `Cancelada` antes de la hora | No se envía nada |
 
@@ -469,7 +496,7 @@ Envía desde el buzón compartido una respuesta preparada en la hoja `Respuestas
 | Desencadenadores de Outlook | Revisan el buzón cada pocos minutos, no al instante | Esperado |
 | Libro abierto en Excel de escritorio | El flujo puede fallar por archivo bloqueado | Cerrar Excel de escritorio después de actualizar |
 | Formato distinto de `Item [#] Qty [#]` | `Faltantes` = -1 → `NARANJA` | Revisión manual |
-| Al pegar `Faltantes` o `Detalle` aparece *"There's a problem with this formula"* | Falta la tabla `tblOH`, tiene otro nombre (por ejemplo, el que le puso Power Query) o sus encabezados no son exactamente `Articulo` y `OH`; o en `tblCorreos` el encabezado dice `Artículos` con acento | Haz la comprobación rápida de la [sección 2.1](#21-hoja-materialoh--tabla-tbloh), corrige el nombre de la tabla o de los encabezados y vuelve a pegar la fórmula |
+| Al pegar `Faltantes` o `Detalle` aparece *"There's a problem with this formula"* | No existen los nombres `OH_Item`, `OH_Desc` y `OH_Qty`, o apuntan a una tabla que se borró (pasa al recargar con Power Query); o en `tblCorreos` el encabezado dice `Artículos` con acento | Revisa **Fórmulas → Administrador de nombres**: los tres nombres deben existir y no mostrar `#REF!`. Si muestran `#REF!`, edítalos y vuelve a seleccionar la columna con el mouse ([sección 2.1](#21-hoja-materialoh--tabla-tbloh)). Después vuelve a pegar la fórmula |
 | El mismo mensaje aparece en **todas** las fórmulas | El separador de argumentos de tu Windows es punto y coma | Cambia las comas que separan argumentos por `;` (ver [sección 11](#11-fórmulas-en-excel-en-español)) |
 | **Obtener una fila** marca error con el valor de clave | Algunos Id. de mensaje traen caracteres que Excel Online no acepta como clave | Agrega en `tblCorreos` la columna `Fila` = `=ROW()-ROW(tblCorreos[[#Headers],[IdCorreo]])` · en el desencadenador **Configuración → Control de simultaneidad → Grado de paralelismo 1** · cambia 5.6 por **Enumerar filas presentes en una tabla** con *Ordenar por* `Fila desc` y *Número superior* `1` |
 
@@ -488,10 +515,10 @@ En Excel configurado para México el separador es la coma (`,`). Si Excel marca 
 | DiasRDD | `=SI([@RDD]="","",LET(p,DIVIDIRTEXTO([@RDD],"-"),y,VALOR(INDICE(p,1,3)),f,FECHA(SI(y<100,2000+y,y),(HALLAR(INDICE(p,1,2),"JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC")+2)/3,VALOR(INDICE(p,1,1))),f-HOY()))` |
 | Tipo | `=SI(O(IZQUIERDA(ESPACIOS([@Asunto]),3)="RE:",IZQUIERDA(ESPACIOS([@Asunto]),3)="FW:",IZQUIERDA(ESPACIOS([@Asunto]),4)="FWD:",ESNUMERO(HALLAR("[Ext]",[@Asunto])),ESNUMERO(HALLAR("thread::",[@Asunto])),[@Adjuntos]=VERDADERO,[@Adjuntos]="true",NO(ESNUMERO(HALLAR("Item [",[@Cuerpo])))),"COMPLEJO","ESTANDAR")` |
 | Articulos | `=(LARGO([@Cuerpo])-LARGO(SUSTITUIR([@Cuerpo],"Item [","")))/6` |
-| Faltantes | `=SI(O([@Articulos]=0,[@Tipo]="COMPLEJO"),0,SI.ERROR(LET(partes,EXCLUIR(DIVIDIRTEXTO([@Cuerpo],"Item ["),,1),art,ESPACIOS(TEXTOANTES(partes,"]")),cant,VALOR(ESPACIOS(TEXTOANTES(TEXTODESPUES(partes,"Qty ["),"]"))),inv,SUMAR.SI.CONJUNTO(tblOH[OH],tblOH[Articulo],art),SUMA(--(inv<cant))),-1))` |
+| Faltantes | `=SI(O([@Articulos]=0,[@Tipo]="COMPLEJO"),0,SI.ERROR(LET(partes,EXCLUIR(DIVIDIRTEXTO([@Cuerpo],"Item ["),,1),art,ESPACIOS(TEXTOANTES(partes,"]")),cant,VALOR(ESPACIOS(TEXTOANTES(TEXTODESPUES(partes,"Qty ["),"]"))),inv,SUMAR.SI.CONJUNTO(OH_Qty,OH_Item,art),SUMA(--(inv<cant))),-1))` |
 | Resultado | `=SI([@BO]="","ROJO",SI(O([@Tipo]="COMPLEJO",[@Faltantes]<0),"NARANJA",SI([@Faltantes]>0,"ROJO","VERDE")))` |
 | Prioridad | `=SI(Y([@Resultado]="ROJO",ESNUMERO([@DiasRDD])),SI([@DiasRDD]<=7,"CRITICA","NORMAL"),"NORMAL")` |
-| Detalle | `=SI(O([@Articulos]=0,[@Tipo]="COMPLEJO"),"<p>Correo complejo: revisión manual.</p>",SI.ERROR(LET(partes,EXCLUIR(DIVIDIRTEXTO([@Cuerpo],"Item ["),,1),art,ESPACIOS(TEXTOANTES(partes,"]")),cant,VALOR(ESPACIOS(TEXTOANTES(TEXTODESPUES(partes,"Qty ["),"]"))),inv,SUMAR.SI.CONJUNTO(tblOH[OH],tblOH[Articulo],art),filas,"<tr><td>"&art&"</td><td align=right>"&cant&"</td><td align=right>"&inv&"</td><td>"&SI(inv>=cant,"OK","FALTAN "&(cant-inv))&"</td></tr>","<table border=1 cellpadding=4 cellspacing=0><tr><th>Artículo</th><th>Pide</th><th>OH</th><th>Estado</th></tr>"&UNIRCADENAS("",VERDADERO,filas)&"</table>"),"<p>Formato no reconocido.</p>"))` |
+| Detalle | `=SI(O([@Articulos]=0,[@Tipo]="COMPLEJO"),"<p>Correo complejo: revisión manual.</p>",SI.ERROR(LET(partes,EXCLUIR(DIVIDIRTEXTO([@Cuerpo],"Item ["),,1),art,ESPACIOS(TEXTOANTES(partes,"]")),cant,VALOR(ESPACIOS(TEXTOANTES(TEXTODESPUES(partes,"Qty ["),"]"))),inv,SUMAR.SI.CONJUNTO(OH_Qty,OH_Item,art),des,BUSCARX(art,OH_Item&"",OH_Desc,"NO ESTA EN OH"),filas,"<tr><td>"&art&"</td><td>"&des&"</td><td align=right>"&cant&"</td><td align=right>"&inv&"</td><td>"&SI(inv>=cant,"OK","FALTAN "&(cant-inv))&"</td></tr>","<table border=1 cellpadding=4 cellspacing=0><tr><th>Artículo</th><th>Descripción</th><th>Pide</th><th>OH</th><th>Estado</th></tr>"&UNIRCADENAS("",VERDADERO,filas)&"</table>"),"<p>Formato no reconocido.</p>"))` |
 | Etiqueta | `="["&[@Resultado]&"] BO# "&SI([@BO]="","SIN BO#",[@BO])&SI([@Prioridad]="CRITICA"," · CRITICA","")&" · "&[@Asunto]` |
 
 **tblRespuestas**
@@ -508,9 +535,9 @@ En Excel configurado para México el separador es la coma (`,`). Si Excel marca 
 
 | Celda | Fórmula |
 |---|---|
-| A5 | `=LET(q,ESPACIOS($B$2),modo,$B$3,art,tblOH[Articulo]&"",m,SI(modo="Artículo",art=q,SI(modo="Contiene",ESNUMERO(HALLAR(q,art)),ESNUMERO(HALLAR(q,tblOH[Descripcion])))),SI(q="","",FILTRAR(tblOH,m,"Sin resultados")))` |
-| E2 | `=SI($B$2="","",SUMAR.SI.CONJUNTO(tblOH[OH],tblOH[Articulo],ESPACIOS($B$2)))` |
-| H6 | `=SI(G6="","",SUMAR.SI.CONJUNTO(tblOH[OH],tblOH[Articulo],G6))` |
-| I6 | `=SI(G6="","",SI(CONTAR.SI.CONJUNTO(tblOH[Articulo],G6)=0,"NO EXISTE","OK"))` |
+| A5 | `=LET(q,ESPACIOS($B$2),modo,$B$3,art,OH_Item&"",m,SI(modo="Artículo",art=q,SI(modo="Contiene",ESNUMERO(HALLAR(q,art)),ESNUMERO(HALLAR(q,OH_Desc)))),SI(q="","",FILTRAR(tblOH,m,"Sin resultados")))` |
+| E2 | `=SI($B$2="","",SUMAR.SI.CONJUNTO(OH_Qty,OH_Item,ESPACIOS($B$2)))` |
+| H6 | `=SI(G6="","",SUMAR.SI.CONJUNTO(OH_Qty,OH_Item,G6))` |
+| I6 | `=SI(G6="","",SI(CONTAR.SI.CONJUNTO(OH_Item,G6)=0,"NO EXISTE","OK"))` |
 
 Validación de datos en español: `=INDIRECTO("tblPlantillas[Nombre]")` y `=INDIRECTO("tblCorreos[BO]")`.
