@@ -50,6 +50,8 @@ Resultado:
 
 ## 2. Libro de Excel
 
+> **Atajo:** descarga [`OrderApproval.xlsx`](OrderApproval.xlsx) de este repositorio. Ya trae las hojas `MaterialOH`, `Correos` y `Buscar` con las tablas `tblOH` y `tblCorreos`, los nombres `OH_Item`, `OH_Desc` y `OH_Qty` y todas las fórmulas de esta sección (alcance actual: sin `Plantillas`, `Respuestas` ni `Config`). Borra las filas grises de ejemplo, pega tu Material OH y sigue en la [sección 5](#5-flujo-oa-a--clasificar-correos). Requiere Excel de Microsoft 365.
+
 Crea en `OrderApproval` un libro llamado **`OrderApproval.xlsx`** con cinco hojas. Cada rango se convierte en tabla con **Insertar → Tabla** (marca *La tabla tiene encabezados*) y se nombra en **Diseño de tabla → Nombre de la tabla**.
 
 > Las fórmulas están en inglés. Si tu Excel está en español, copia las de la [sección 11](#11-fórmulas-en-excel-en-español).
