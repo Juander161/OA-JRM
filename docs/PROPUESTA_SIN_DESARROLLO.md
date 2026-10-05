@@ -62,6 +62,10 @@ Crea en `OrderApproval` un libro llamado **`OrderApproval.xlsx`** con cinco hoja
 
 Formato: `Articulo` como **Texto**, `OH` como **Número**. Se llena en la [sección 3](#3-cargar-el-material-oh-con-o-sin-encabezado).
 
+> **Crea esta tabla antes que `tblCorreos`.** Las fórmulas `Faltantes` y `Detalle` la usan. Si la tabla no existe, o su nombre o sus encabezados son distintos, Excel marca *"There's a problem with this formula"* / *"Hay un problema con esta fórmula"*. Los nombres deben ser exactos: tabla `tblOH`, columnas `Articulo` y `OH`, **sin acentos ni espacios**.
+>
+> **Comprobación rápida:** en cualquier celda vacía escribe `=SUM(tblOH[OH])` (en español `=SUMA(tblOH[OH])`) y presiona Enter. Si muestra un número (aunque sea `0`), la tabla está bien; borra la celda. Si aparece el mensaje de error, revisa el nombre en **Diseño de tabla → Nombre de la tabla** y los encabezados.
+
 ### 2.2 Hoja `Correos` · tabla `tblCorreos`
 
 Escribe estos 16 encabezados en la fila 1 (A1 a P1) y conviértelos en tabla:
@@ -113,6 +117,8 @@ Para que las fórmulas se puedan capturar, escribe una fila de prueba en A2:F2 (
 ```
 
 **L · Faltantes** (artículos sin existencia suficiente; `-1` = formato no reconocido)
+
+> Antes de pegar `Faltantes` y `Detalle`, haz la comprobación rápida de `tblOH` de la [sección 2.1](#21-hoja-materialoh--tabla-tbloh). Estas dos fórmulas también usan las columnas `Articulos` y `Tipo` de esta tabla: deben existir con esos nombres exactos (`Articulos` sin acento).
 ```
 =IF(OR([@Articulos]=0,[@Tipo]="COMPLEJO"),0,IFERROR(LET(partes,DROP(TEXTSPLIT([@Cuerpo],"Item ["),,1),art,TRIM(TEXTBEFORE(partes,"]")),cant,VALUE(TRIM(TEXTBEFORE(TEXTAFTER(partes,"Qty ["),"]"))),inv,SUMIFS(tblOH[OH],tblOH[Articulo],art),SUM(--(inv<cant))),-1))
 ```
@@ -463,6 +469,8 @@ Envía desde el buzón compartido una respuesta preparada en la hoja `Respuestas
 | Desencadenadores de Outlook | Revisan el buzón cada pocos minutos, no al instante | Esperado |
 | Libro abierto en Excel de escritorio | El flujo puede fallar por archivo bloqueado | Cerrar Excel de escritorio después de actualizar |
 | Formato distinto de `Item [#] Qty [#]` | `Faltantes` = -1 → `NARANJA` | Revisión manual |
+| Al pegar `Faltantes` o `Detalle` aparece *"There's a problem with this formula"* | Falta la tabla `tblOH`, tiene otro nombre (por ejemplo, el que le puso Power Query) o sus encabezados no son exactamente `Articulo` y `OH`; o en `tblCorreos` el encabezado dice `Artículos` con acento | Haz la comprobación rápida de la [sección 2.1](#21-hoja-materialoh--tabla-tbloh), corrige el nombre de la tabla o de los encabezados y vuelve a pegar la fórmula |
+| El mismo mensaje aparece en **todas** las fórmulas | El separador de argumentos de tu Windows es punto y coma | Cambia las comas que separan argumentos por `;` (ver [sección 11](#11-fórmulas-en-excel-en-español)) |
 | **Obtener una fila** marca error con el valor de clave | Algunos Id. de mensaje traen caracteres que Excel Online no acepta como clave | Agrega en `tblCorreos` la columna `Fila` = `=ROW()-ROW(tblCorreos[[#Headers],[IdCorreo]])` · en el desencadenador **Configuración → Control de simultaneidad → Grado de paralelismo 1** · cambia 5.6 por **Enumerar filas presentes en una tabla** con *Ordenar por* `Fila desc` y *Número superior* `1` |
 
 ---
